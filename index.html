@@ -200,6 +200,17 @@
             text-overflow: ellipsis;
         }
         
+        .wallet-address a {
+            color: #667eea;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+        
+        .wallet-address a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+        
         .status {
             padding: 6px 12px;
             border-radius: 20px;
@@ -600,9 +611,13 @@
                         </td>
                     `;
                 } else {
+                    const polymarketLink = wallet.polyMarketName 
+                        ? `<a href="https://polymarket.com/@${wallet.polyMarketName}" target="_blank" rel="noopener noreferrer">${wallet.discordName || 'N/A'}</a>`
+                        : (wallet.discordName || 'N/A');
+                        
                     row.innerHTML = `
                         <td class="rank ${rank <= 3 ? 'top-3' : ''}">${getRankDisplay(rank)}</td>
-                        <td class="wallet-address" title="${wallet.discordName || 'N/A'}">${wallet.discordName || 'N/A'}</td>
+                        <td class="wallet-address" title="${wallet.discordName || 'N/A'}">${polymarketLink}</td>
                         <td><span class="status ${wallet.status}">${wallet.status}</span></td>
                         <td class="${getPNLClass(wallet.pnlPercentage)}">${formatPercentage(wallet.pnlPercentage)}</td>
                         <td class="currency ${getPNLClass(wallet.currentPNL)}">${formatCurrency(wallet.currentPNL)}</td>
