@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>ACNM Polymarket Leaderboard.</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: white;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            color: rgba(255,255,255,0.9);
+            font-size: 1.1rem;
+        }
+        
+        .stats-bar {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #333;
+            display: block;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+        
+        .refresh-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            min-height: 44px; /* Touch-friendly minimum size */
+            touch-action: manipulation; /* Prevent double-tap zoom */
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        
+        .refresh-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            display: none;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .loading p {
+            color: #666;
+        }
+        
+        .table-container {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .leaderboard-table th,
+        .leaderboard-table td {
+            padding: 16px 20px;
+            text-align: left;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .leaderboard-table th {
+            background: rgba(0,0,0,0.05);
+            font-weight: 700;
+            color: #333;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .leaderboard-table tr {
+            transition: background-color 0.2s ease;
+        }
+        
+        .leaderboard-table tbody tr:hover {
+            background: rgba(102,126,234,0.05);
+        }
+        
+        .rank {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #333;
+            width: 80px;
+        }
+        
+        .rank.top-3 {
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .wallet-address {
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            color: #555;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status.profitable {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status.loss {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status.error {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .pnl-positive {
+            color: #28a745;
+            font-weight: 600;
+        }
+        
+        .pnl-negative {
+            color: #dc3545;
+            font-weight: 600;
+        }
+        
+        .pnl-neutral {
+            color: #6c757d;
+            font-weight: 600;
+        }
+        
+        .currency {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+        }
+        
+        .error-message {
+            background: rgba(248, 215, 218, 0.9);
+            color: #721c24;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+                margin-bottom: 8px;
+            }
+            
+            .header p {
+                font-size: 1rem;
+            }
+            
+            .stats-bar {
+                flex-direction: column;
+                text-align: center;
+                padding: 15px;
+                gap: 15px;
+            }
+            
+            .stat {
+                min-width: 120px;
+            }
+            
+            .stat-value {
+                font-size: 1.5rem;
+            }
+            
+            .refresh-btn {
+                width: 100%;
+                max-width: 200px;
+                padding: 14px 20px;
+                font-size: 16px;
+            }
+            
+            .table-container {
+                overflow-x: auto;
+                border-radius: 12px;
+            }
+            
+            .leaderboard-table {
+                font-size: 0.8rem;
+                min-width: 600px;
+            }
+            
+            .leaderboard-table th,
+            .leaderboard-table td {
+                padding: 10px 8px;
+            }
+            
+            .leaderboard-table th {
+                font-size: 0.75rem;
+                white-space: nowrap;
+            }
+            
+            .rank {
+                width: 60px;
+                font-size: 1rem;
+            }
+            
+            .wallet-address {
+                max-width: 100px;
+                font-size: 0.75rem;
+            }
+            
+            .status {
+                padding: 4px 8px;
+                font-size: 0.7rem;
+            }
+            
+            .currency {
+                font-size: 0.8rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 5px;
+            }
+            
+            .dashboard {
+                max-width: 100%;
+            }
+            
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .header p {
+                font-size: 0.9rem;
+            }
+            
+            .stats-bar {
+                padding: 12px;
+                gap: 12px;
+            }
+            
+            .stat-value {
+                font-size: 1.3rem;
+            }
+            
+            .stat-label {
+                font-size: 0.8rem;
+            }
+            
+            .leaderboard-table {
+                font-size: 0.75rem;
+                min-width: 550px;
+            }
+            
+            .leaderboard-table th,
+            .leaderboard-table td {
+                padding: 8px 6px;
+            }
+            
+            .rank {
+                width: 50px;
+                font-size: 0.9rem;
+            }
+            
+            .wallet-address {
+                max-width: 80px;
+                font-size: 0.7rem;
+            }
+            
+            .status {
+                padding: 3px 6px;
+                font-size: 0.65rem;
+            }
+            
+            .currency {
+                font-size: 0.75rem;
+            }
+            
+            .loading {
+                padding: 40px 15px;
+            }
+            
+            .loading h3 {
+                font-size: 1.2rem;
+            }
+            
+            .loading p {
+                font-size: 0.9rem;
+            }
+            
+            .error-message {
+                padding: 15px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>🏆 ACNM Polymarket Leaderboard</h1>
+            <p>Top performing users ranked by PNL percentage</p>
+        </div>
+        
+        <div class="stats-bar">
+            <div class="stat">
+                <span class="stat-value" id="totalusers">-</span>
+                <div class="stat-label">Total users</div>
+            </div>
+            <div class="stat">
+                <span class="stat-value" id="profitableCount">-</span>
+                <div class="stat-label">Profitable</div>
+            </div>
+            <div class="stat">
+                <span class="stat-value" id="lossCount">-</span>
+                <div class="stat-label">In Loss</div>
+            </div>
+            <div class="stat">
+                <span class="stat-value" id="breakEvenCount">-</span>
+                <div class="stat-label">Break-even</div>
+            </div>
+            <button class="refresh-btn" onclick="loadLeaderboard()" id="refreshBtn">
+                🔄 Refresh Data
+            </button>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <h3>Loading Leaderboard...</h3>
+            <p>Fetching latest wallet performance data...</p>
+        </div>
+        
+        <div class="table-container" id="tableContainer" style="display: none;">
+            <table class="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Discord Name</th>
+                        <th>Status</th>
+                        <th>PNL %</th>
+                        <th>PNL $</th>
+                        <th>Initial Deposit</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboardBody">
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="error-message" id="errorMessage" style="display: none;">
+            <h3>❌ Failed to Load Data</h3>
+            <p id="errorText">Unable to fetch leaderboard data. Please try again.</p>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE_URL = '/api'; // Change this to your API base URL if different
+        
+        // Utility functions
+        function formatCurrency(amount) {
+            if (amount === null || amount === undefined || amount === 0) return '$0.00';
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(amount);
+        }
+        
+        function formatPercentage(percentage) {
+            if (percentage === null || percentage === undefined || percentage === 0) return '0.00%';
+            const sign = percentage > 0 ? '+' : '';
+            return `${sign}${percentage.toFixed(2)}%`;
+        }
+        
+        function formatAddress(address) {
+            if (!address) return 'N/A';
+            return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+        }
+        
+        function getTimeSince(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffInDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+            
+            if (diffInDays === 0) return 'Today';
+            if (diffInDays === 1) return '1 day ago';
+            if (diffInDays < 30) return `${diffInDays} days ago`;
+            if (diffInDays < 365) return `${Math.floor(diffInDays / 30)} months ago`;
+            return `${Math.floor(diffInDays / 365)} years ago`;
+        }
+        
+        function getPNLClass(pnl) {
+            if (pnl > 0) return 'pnl-positive';
+            if (pnl < 0) return 'pnl-negative';
+            return 'pnl-neutral';
+        }
+        
+        function getRankDisplay(rank) {
+            if (rank <= 3) {
+                const medals = ['🥇', '🥈', '🥉'];
+                return `${medals[rank - 1]} ${rank}`;
+            }
+            return rank;
+        }
+        
+        // Main functions
+        async function loadLeaderboard() {
+            const loading = document.getElementById('loading');
+            const tableContainer = document.getElementById('tableContainer');
+            const errorMessage = document.getElementById('errorMessage');
+            const refreshBtn = document.getElementById('refreshBtn');
+            
+            // Show loading state
+            loading.classList.add('show');
+            tableContainer.style.display = 'none';
+            errorMessage.style.display = 'none';
+            refreshBtn.disabled = true;
+            refreshBtn.textContent = '⏳ Loading...';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/endpoints/ranking`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.data && Array.isArray(data.data)) {
+                    populateLeaderboard(data);
+                    updateStats(data);
+                    tableContainer.style.display = 'block';
+                } else {
+                    throw new Error('Invalid data format received from API');
+                }
+                
+            } catch (error) {
+                console.error('Error loading leaderboard:', error);
+                showError(error.message);
+            } finally {
+                loading.classList.remove('show');
+                refreshBtn.disabled = false;
+                refreshBtn.textContent = '🔄 Refresh Data';
+            }
+        }
+        
+        function populateLeaderboard(data) {
+            const tbody = document.getElementById('leaderboardBody');
+            tbody.innerHTML = '';
+            
+            // Sort data by PNL percentage (highest first)
+            const sortedData = [...data.data].sort((a, b) => {
+                // Handle error status items (put them at the bottom)
+                if (a.status === 'error' && b.status !== 'error') return 1;
+                if (b.status === 'error' && a.status !== 'error') return -1;
+                if (a.status === 'error' && b.status === 'error') return 0;
+                
+                // Sort by PNL percentage for valid entries
+                const aPnl = a.pnlPercentage || 0;
+                const bPnl = b.pnlPercentage || 0;
+                return bPnl - aPnl;
+            });
+            
+            sortedData.forEach((wallet, index) => {
+                const row = document.createElement('tr');
+                const rank = index + 1;
+                
+                if (wallet.status === 'error') {
+                    row.innerHTML = `
+                        <td class="rank">${rank}</td>
+                        <td class="wallet-address" title="${wallet.discordName || 'N/A'}">${wallet.discordName || 'N/A'}</td>
+                        <td><span class="status error">Error</span></td>
+                        <td colspan="4" style="color: #856404; font-style: italic;">
+                            ${wallet.message || 'Analysis failed'}
+                        </td>
+                    `;
+                } else {
+                    row.innerHTML = `
+                        <td class="rank ${rank <= 3 ? 'top-3' : ''}">${getRankDisplay(rank)}</td>
+                        <td class="wallet-address" title="${wallet.discordName || 'N/A'}">${wallet.discordName || 'N/A'}</td>
+                        <td><span class="status ${wallet.status}">${wallet.status}</span></td>
+                        <td class="${getPNLClass(wallet.pnlPercentage)}">${formatPercentage(wallet.pnlPercentage)}</td>
+                        <td class="currency ${getPNLClass(wallet.currentPNL)}">${formatCurrency(wallet.currentPNL)}</td>
+                        <td class="currency">${formatCurrency(wallet.initialDeposit)}</td>
+                    `;
+                }
+                
+                tbody.appendChild(row);
+            });
+        }
+        
+        function updateStats(data) {
+            const totalusers = data.totalusers || data.data.length;
+            const profitableCount = data.data.filter(w => w.status === 'profitable').length;
+            const lossCount = data.data.filter(w => w.status === 'loss').length;
+            const breakEvenCount = data.data.filter(w => w.status === 'break-even').length;
+            
+            document.getElementById('totalusers').textContent = totalusers;
+            document.getElementById('profitableCount').textContent = profitableCount;
+            document.getElementById('lossCount').textContent = lossCount;
+            document.getElementById('breakEvenCount').textContent = breakEvenCount;
+        }
+        
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            
+            errorText.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+        
+        // Auto-refresh every 5 minutes
+        setInterval(loadLeaderboard, 5 * 60 * 1000);
+        
+        // Load data when page loads
+        document.addEventListener('DOMContentLoaded', loadLeaderboard);
+    </script>
+</body>
+</html>
