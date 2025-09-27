@@ -1,30 +1,24 @@
 const PolymarketPNLService = require("./polymarketPNLService");
 
-class WalletAnalysisService {
+class PolymarketUserStatsService {
   constructor() {
     this.polymarketPNLService = new PolymarketPNLService();
   }
 
-  /**
-   * Get a quick summary of wallet performance
-   * @param {string} address - The wallet address to analyze
-   * @returns {Promise<Object>} Quick performance summary
-   */
-  async getQuickSummary(address, initialBalance) {
+  async getUserStats(user) {
     try {
-      const pnl = await this.polymarketPNLService.getTotalPNL(address);
-      const pnlPercentage = this.getPercentage(pnl, initialBalance);
+      const pnl = await this.polymarketPNLService.getTotalPNL(
+        user.walletAddress
+      );
+      const pnlPercentage = this.getPercentage(pnl, user.startingBalance);
 
       return {
-        address,
         status: pnl > 0 ? "profitable" : pnl < 0 ? "loss" : "break-even",
-        initialDeposit: initialBalance,
-        currentPNL: pnl,
+        pnl: pnl,
         pnlPercentage: pnlPercentage,
       };
     } catch (error) {
       return {
-        address,
         status: "error",
         message: `Analysis failed: ${error.message}`,
       };
@@ -44,4 +38,4 @@ class WalletAnalysisService {
   }
 }
 
-module.exports = WalletAnalysisService;
+module.exports = PolymarketUserStatsService;

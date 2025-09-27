@@ -1,7 +1,5 @@
 require("dotenv").config();
-
-// Import the WalletAnalysisService using require since it uses CommonJS
-const WalletAnalysisService = require("../src/walletAnalysisService");
+const PolymarketUserStatsService = require("../src/polyMarketUserStatsService");
 
 async function handler(req, res) {
   // Set CORS headers to allow cross-origin requests
@@ -20,7 +18,7 @@ async function handler(req, res) {
 
   try {
     const users = JSON.parse(process.env["USERS"]);
-    const walletAnalysisService = new WalletAnalysisService();
+    const userStatsService = new PolymarketUserStatsService();
 
     if (!users || !Array.isArray(users)) {
       throw new Error("Invalid config file: users array not found");
@@ -29,12 +27,9 @@ async function handler(req, res) {
     // Get quick summaries for all users
     const summaries = await Promise.allSettled(
       users.map(async (user) => {
-        const summary = await walletAnalysisService.getQuickSummary(
-          user.walletAddress,
-          user.startingBalance
-        );
+        const stats = await userStatsService.getUserStats(user);
         return {
-          summary,
+          stats,
           user,
         };
       })
@@ -44,15 +39,15 @@ async function handler(req, res) {
     const results = summaries.map((result, index) => {
       if (result.status === "fulfilled") {
         var user = result.value.user;
-        var summary = result.value.summary;
+        var stats = result.value.stats;
 
         const retVal = {
           polyMarketName: user.polymarketName,
           discordName: user.discordName,
-          status: summary.status,
-          initialDeposit: summary.initialDeposit,
-          currentPNL: summary.currentPNL,
-          pnlPercentage: summary.pnlPercentage,
+          status: stats.status,
+          initialDeposit: user.startingBalance,
+          currentPNL: stats.pnl,
+          pnlPercentage: stats.pnlPercentage,
         };
         return retVal;
       } else {
