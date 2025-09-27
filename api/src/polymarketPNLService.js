@@ -5,11 +5,6 @@ class PolymarketPNLService {
     this.pnlBaseURL = "https://user-pnl-api.polymarket.com";
   }
 
-  /**
-   * Get total lifetime PNL for an account with percentage calculation
-   * @param {string} address - The wallet address
-   * @returns {Promise<Object>} Total PNL summary with percentage
-   */
   async getTotalPNL(address) {
     try {
       const response = await axios.get(`${this.pnlBaseURL}/user-pnl`, {

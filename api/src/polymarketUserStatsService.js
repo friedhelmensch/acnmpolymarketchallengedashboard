@@ -1,8 +1,6 @@
-const PolymarketPNLService = require("./polymarketPNLService");
-
 class PolymarketUserStatsService {
-  constructor() {
-    this.polymarketPNLService = new PolymarketPNLService();
+  constructor(polymarketPNLService) {
+    this.polymarketPNLService = polymarketPNLService;
   }
 
   async getUserStats(user) {
