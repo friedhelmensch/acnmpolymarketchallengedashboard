@@ -1,7 +1,7 @@
 require("dotenv").config();
 const AllUsersService = require("./allUsersService");
 const PolymarketPNLService = require("./polymarketPNLService");
-const PolymarketUserStatsService = require("./polyMarketUserStatsService");
+const PolymarketUserStatsService = require("./polymarketUserStatsService");
 
 function create() {
   const userStatsService = new PolymarketUserStatsService(
